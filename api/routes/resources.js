@@ -1,34 +1,30 @@
-const {
-  getResources,
-  getResource,
-  addResource,
-  deleteResource
-} = require('../dal')
-const pkGen = require('../lib/pkGen')
+const { getDoc, addDoc, deleteDoc, updateDoc } = require('../lib/dal-helper')
+const { getCategories } = require('../dal')
+const slugify = require('slugify')
 
 module.exports = app => {
-  app.get('/resources', (req, res) => {
-    getResources({
+  app.get('/categories', (req, res) => {
+    getCategories({
       include_docs: true,
-      startkey: 'resource_',
-      endkey: 'resource_\ufff0'
-    })
-      .then(resources => res.send(resources))
-      .catch(err => console.log(err))
+      startkey: 'category_',
+      endkey: 'category_\ufff0'
+    }).then(categories => res.send(categories))
   })
-  app.get('/resources/:id', (req, res) => {
-    getResource(req.params.id).then(resource => res.send(resource))
+  app.get('/categories/:id', (req, res) => {
+    getDoc(req.params.id).then(doc => res.send(doc))
   })
-
-  app.post('/resources', (req, res) => {
-    addResource(req.body)
-      .then(addedResource => res.status(201).send(addedResource))
-      .catch(err => console.log('Post Resource ERROR', err))
+  app.post('/categories', (req, res) => {
+    req.body.type = 'category'
+    req.body._id = `${req.body.type}_${slugify(req.body.shortName, {
+      lower: true
+    })}`
+    addDoc(req.body).then(doc => res.send(doc))
   })
-
-  app.delete('/resources/:id', (req, res) => {
-    deleteResource(req.params.id)
-      .then(deletedResult => res.status(200).send(deletedResult))
-      .catch(err => console.log('Could not delete item.'))
+  app.delete('/categories/:id', (req, res) => {
+    deleteDoc(req.params.id).then(doc => res.send(doc))
+  })
+  app.put('/categories/:id', (req, res) => {
+    console.log('REQ BODY IS', req.body)
+    return updateDoc(req.body).then(doc => res.send(doc))
   })
 }
