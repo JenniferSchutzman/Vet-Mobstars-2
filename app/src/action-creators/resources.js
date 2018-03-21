@@ -1,71 +1,85 @@
 import fetch from 'isomorphic-fetch'
 import {
-  SET_RESOURCES,
-  GET_RESOURCE,
-  CHG_CURRENT_RESOURCE,
-  CLEAR_CURRENT_RESOURCE,
-  ERROR
+  SET_CATEGORIES,
+  CURRENT_CAT,
+  CHANGE_CURRENT_CATEGORY,
+  RESET_ADD_CAT_FORM,
+  RESET_EDIT_CAT_FORM,
+  EDIT_CURRENT_CATEGORY
 } from '../constants'
 const url = 'http://localhost:5000'
 
 /*
 getResources()
 - use fetch to make a GET to /resources
-- take array of resource documents and t  urn them into json
+- take array of resource documents and turn them into json
 - dispatch an action containing the resources as a payload:
 	dispatch({type: SET_RESOURCES, payload: resources})
 */
-export const getResources = async (dispatch, getState) => {
-  const resources = await fetch(`${url}/resources`).then(res => res.json())
-  dispatch({ type: SET_RESOURCES, payload: resources })
+export const getCategories = async (dispatch, getState) => {
+  const categories = await fetch(`${url}/categories`).then(res => res.json())
+  dispatch({ type: SET_CATEGORIES, payload: categories })
 }
 
-export const getResource = id => async (dispatch, getState) => {
-  dispatch({ type: GET_RESOURCE, payload: {} })
-  const resource = await fetch(`${url}/resources/${id}`).then(res => res.json())
-  dispatch({ type: GET_RESOURCE, payload: resource })
+export const getCategory = id => async (dispatch, getState) => {
+  dispatch({ type: CURRENT_CAT, payload: {} })
+  const category = await fetch(`${url}/categories/${id}`).then(res =>
+    res.json()
+  )
+  dispatch({ type: CURRENT_CAT, payload: category })
 }
 
-export const deleteResource = (id, history) => async (dispatch, getState) => {
-  const headers = {
-    'Content-Type': 'application/json'
-  }
-  const method = 'DELETE'
-  const response = await fetch(`${url}/resources/${id}`, {
-    method,
-    headers
-  }).then(res => res.json())
-  if (!response.ok) {
-    dispatch({ type: ERROR, payload: 'Could not delete resource' })
-    return
-  }
-  dispatch(getResources)
-  history.push('/resources')
-}
-
-export const addResource = (resource, history) => async (
+export const addCategory = (category, history) => async (
   dispatch,
   getState
 ) => {
-  const headers = { 'Content-Type': 'application/json' }
   const method = 'POST'
-  const body = JSON.stringify(resource)
-
-  const result = await fetch(`${url}/resources`, {
-    headers,
-    method,
-    body
-  }).then(res => res.json())
-
-  if (result) {
-    if (result.ok) {
-      dispatch(getResources)
-      dispatch({ type: CLEAR_CURRENT_RESOURCE })
-      history.push('/resources')
-    }
-  }
+  const headers = { 'Content-Type': 'application/json' }
+  const body = JSON.stringify(category)
+  await fetch(`${url}/categories`, { method, headers, body })
+    .then(httpResponse => httpResponse.json())
+    .catch(err => {
+      console.log('fetch err', err)
+    })
+  dispatch(getCategories)
+  dispatch({ type: RESET_ADD_CAT_FORM })
+  history.push('/categories')
 }
 
-export const chgResource = (field, value) => async (dispatch, getState) => {
-  dispatch({ type: CHG_CURRENT_RESOURCE, payload: { [field]: value } })
+export const changeCategory = (field, value) => (dispatch, getState) => {
+  dispatch({ type: CHANGE_CURRENT_CATEGORY, payload: { [field]: value } })
+}
+export const changeCategory1 = (field, value) => (dispatch, getState) => {
+  dispatch({ type: EDIT_CURRENT_CATEGORY, payload: { [field]: value } })
+}
+export const cancel = history => (dispatch, getState) => {
+  dispatch({ type: RESET_ADD_CAT_FORM })
+  history.push('/categories')
+}
+export const cancelEdit = history => (dispatch, getState) => {
+  dispatch({ type: RESET_EDIT_CAT_FORM })
+  history.goBack()
+}
+export const deleteCategory = (id, history) => async (dispatch, getState) => {
+  const method = 'DELETE'
+  const headers = { 'Content-Type': 'application/json' }
+  await fetch(`${url}/categories/${id}`, { method, headers }).then(res =>
+    res.json()
+  )
+  dispatch(getCategories)
+  history.push('/categories')
+}
+export const updateCategory = (history, category) => async (
+  dispatch,
+  getState
+) => {
+  await fetch(`${url}/categories/${category._id}`, {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    method: 'PUT',
+    body: JSON.stringify(category)
+  }).then(res => res.json())
+  dispatch(getCategory(category._id))
+  history.push(`/categories/${category._id}`)
 }
